@@ -23,7 +23,10 @@ export default async function HomePage() {
     db.testimonial.findMany({ where: { approved: true, consent: true }, take: 4 }),
   ]);
 
-  const heroImages: string[] = JSON.parse(settings.heroImages || "[]");
+  // Fall back to the bundled photos so the hero is never blank (e.g. a fresh, empty database).
+  let heroImages: string[] = [];
+  try { heroImages = JSON.parse(settings.heroImages || "[]"); } catch {}
+  if (heroImages.length === 0) heroImages = ["13-slk-lg.jpg", "04-slk-lg.jpg", "11-slk-lg.jpg", "05-slk-lg.jpg"].map((f) => `/images/photos/${f}`);
   const fundraising = projects.filter((p) => p.status === "FUNDRAISING");
   const urgent = fundraising.filter((p) => p.priority === "URGENT" || p.priority === "HIGH").sort((a, b) => (a.priority === "URGENT" ? -1 : 1) - (b.priority === "URGENT" ? -1 : 1)).slice(0, 3);
   const featured = projects.filter((p) => p.featured && p.status !== "COMPLETED").slice(0, 6);
