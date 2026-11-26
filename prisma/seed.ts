@@ -30,6 +30,19 @@ let refCounter = 1000;
 const nextRef = () => `DN-DEMO${++refCounter}`;
 
 async function main() {
+  // `--if-empty` is used by the deploy build: load demo data only into a brand-new
+  // database, and only when SEED_ADMIN_PASSWORD is set (never with public passwords).
+  if (process.argv.includes("--if-empty")) {
+    const pw = process.env.SEED_ADMIN_PASSWORD ?? "";
+    if (pw.length < 10) {
+      console.log("Demo data not loaded: set SEED_ADMIN_PASSWORD (10+ characters) to load it on first deploy.");
+      return;
+    }
+    if ((await db.user.count()) > 0) {
+      console.log("Database already has data; demo seed skipped.");
+      return;
+    }
+  }
   console.log("Resetting database…");
   // order matters for FKs
   await db.ledgerEntry.deleteMany();
@@ -101,9 +114,12 @@ async function main() {
   for (const [i, g] of gateways.entries()) await db.paymentGateway.create({ data: { ...g, sortOrder: i } });
 
   // ---------- Users ----------
-  const adminPw = await bcrypt.hash("Demo@Admin2026", 12);
-  const staffPw = await bcrypt.hash("Demo@Staff2026", 12);
-  const donorPw = await bcrypt.hash("Demo@Donor2026", 12);
+  // On a deployed site, SEED_ADMIN_PASSWORD replaces the public demo passwords
+  // for every account, so the passwords in this file and the README don't work there.
+  const custom = process.env.SEED_ADMIN_PASSWORD;
+  const adminPw = await bcrypt.hash(custom || "Demo@Admin2026", 12);
+  const staffPw = await bcrypt.hash(custom || "Demo@Staff2026", 12);
+  const donorPw = await bcrypt.hash(custom || "Demo@Donor2026", 12);
   const superAdmin = await db.user.create({ data: { email: "superadmin@mnslff.demo", name: "Demo Super Admin", passwordHash: adminPw, role: "SUPER_ADMIN" } });
   const finance = await db.user.create({ data: { email: "finance@mnslff.demo", name: "Demo Finance Manager", passwordHash: staffPw, role: "FINANCE_MANAGER" } });
   const officer = await db.user.create({ data: { email: "officer@mnslff.demo", name: "Demo Finance Officer", passwordHash: staffPw, role: "FINANCE_OFFICER" } });

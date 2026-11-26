@@ -30,10 +30,11 @@ npm run dev                 # http://localhost:3000
    | `DIRECT_URL` | optional — direct (non-pooled) string; `DATABASE_URL_UNPOOLED` / `POSTGRES_URL_NON_POOLING` are detected automatically |
    | `AUTH_SECRET` | 32+ random characters |
    | `SANDBOX_WEBHOOK_SECRET` | 32+ random characters |
+   | `SEED_ADMIN_PASSWORD` | optional — a password **you choose** (10+ chars). The first build loads demo data into the empty database and every demo account gets this password (the public README passwords will not work on the live site). |
    | `NEXT_PUBLIC_SITE_URL` | optional, e.g. `https://your-site.vercel.app` |
    Generate secrets with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`.
 3. **Redeploy.** The build runs `prisma migrate deploy`, which creates the tables.
-4. **Load demo data once** from your computer, with `.env` pointing at the same database: `npm run db:seed`.
+4. **Demo data** loads automatically on the first build if `SEED_ADMIN_PASSWORD` is set. (Or load it from your computer with `.env` pointing at the same database: `npm run db:seed` — that uses the public demo passwords, so only do it for a private test database.)
 5. If the sandbox payment page never confirms on a *preview* URL, turn off Vercel Authentication
    (Settings → Deployment Protection) or test on the production domain: the payment webhook is a server-to-server call to the site itself.
 
