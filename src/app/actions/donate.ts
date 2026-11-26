@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
+import { siteUrl } from "@/lib/site-url";
 import { currentUser } from "@/lib/auth";
 import { coverFeeAmount, validateItemSponsorship } from "@/lib/finance";
 import { ADAPTERS } from "@/lib/payments";
@@ -121,8 +122,8 @@ export async function createDonation(_: FormState, formData: FormData): Promise<
 
   if (v.method === "BANK_TRANSFER") redirect(`/donate/bank/${donation.reference}`);
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-  const start = await adapter.startCheckout({ reference: donation.reference, totalCents: total, currency: "USD", siteUrl });
+  const base = await siteUrl();
+  const start = await adapter.startCheckout({ reference: donation.reference, totalCents: total, currency: "USD", siteUrl: base });
   if ("error" in start) {
     await db.donation.update({ where: { id: donation.id }, data: { status: "FAILED" } });
     return { ok: false, message: start.error };

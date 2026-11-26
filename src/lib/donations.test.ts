@@ -3,7 +3,10 @@ import { PrismaClient } from "@prisma/client";
 import { applyRefund, confirmDonation, failDonation } from "./donations";
 import { projectFinance } from "./finance";
 
-const db = new PrismaClient({ datasourceUrl: inject("testDbUrl") });
+const url = inject("testDbUrl");
+// Skipped unless TEST_DATABASE_URL points at an empty disposable Postgres database.
+const dbDescribe = url ? describe : describe.skip;
+const db = new PrismaClient(url ? { datasourceUrl: url } : undefined);
 let n = 0;
 
 async function setup(opts: { goal?: number; itemQty?: number; fundedQty?: number } = {}) {
@@ -35,14 +38,15 @@ const projectTotals = async (projectId: string) => {
 };
 
 beforeEach(async () => {
+  if (!url) return;
   for (const t of ["ledgerEntry", "transaction", "refund", "bankTransfer", "donation", "expense", "budgetItem", "milestone", "project", "category", "donor"] as const) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (db[t] as any).deleteMany();
   }
 });
-afterAll(() => db.$disconnect());
+afterAll(() => (url ? db.$disconnect() : undefined));
 
-describe("confirmDonation", () => {
+dbDescribe("confirmDonation", () => {
   it("confirms once, writes ledger entries, and ignores webhook retries", async () => {
     const { project, donor } = await setup();
     const d = await donation(donor.id, project.id, 10000);
@@ -95,7 +99,7 @@ describe("confirmDonation", () => {
   });
 });
 
-describe("item sponsorship allocation", () => {
+dbDescribe("item sponsorship allocation", () => {
   it("allocates item quantity only on confirmation", async () => {
     const { project, item, donor } = await setup({ itemQty: 10 });
     const d = await donation(donor.id, project.id, 15000, { budgetItemId: item.id, itemQuantity: 3, kind: "ITEM" });
@@ -121,7 +125,7 @@ describe("item sponsorship allocation", () => {
   });
 });
 
-describe("refunds", () => {
+dbDescribe("refunds", () => {
   it("partial then full refund reduces gross but keeps fees", async () => {
     const { project, donor } = await setup();
     const d = await donation(donor.id, project.id, 10000);

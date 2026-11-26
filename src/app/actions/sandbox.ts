@@ -3,6 +3,7 @@
 import crypto from "node:crypto";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
+import { siteUrl } from "@/lib/site-url";
 import { hmac } from "@/lib/payments";
 
 /**
@@ -24,7 +25,7 @@ export async function sandboxPay(formData: FormData) {
     totalCents: donation.amountCents + donation.coveredFeeCents,
   });
   const ts = Date.now();
-  const site = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const site = await siteUrl();
   try {
     await fetch(`${site}/api/webhooks/sandbox`, {
       method: "POST",

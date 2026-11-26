@@ -18,7 +18,7 @@ export default async function ProjectsAdmin({ searchParams }: { searchParams: SP
     ...(sp.priority ? { priority: sp.priority } : {}),
     ...(sp.category ? { categoryId: sp.category } : {}),
     ...(sp.verification ? { verificationStatus: sp.verification } : {}),
-    ...(sp.q ? { OR: [{ title: { contains: sp.q } }, { code: { contains: sp.q } }, { location: { contains: sp.q } }] } : {}),
+    ...(sp.q ? { OR: [{ title: { contains: sp.q, mode: "insensitive" } }, { code: { contains: sp.q, mode: "insensitive" } }, { location: { contains: sp.q, mode: "insensitive" } }] } : {}),
   };
   const [projects, categories] = await Promise.all([
     getProjects(where, [{ createdAt: "desc" }]),

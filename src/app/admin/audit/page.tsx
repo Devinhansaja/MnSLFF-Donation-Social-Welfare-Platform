@@ -13,7 +13,7 @@ export default async function Audit({ searchParams }: { searchParams: SP }) {
   const where: Prisma.AuditLogWhereInput = {
     ...(sp.entity ? { entity: sp.entity } : {}),
     ...(sp.user ? { userId: sp.user } : {}),
-    ...(sp.q ? { OR: [{ action: { contains: sp.q } }, { detail: { contains: sp.q } }, { entityId: { contains: sp.q } }] } : {}),
+    ...(sp.q ? { OR: [{ action: { contains: sp.q, mode: "insensitive" } }, { detail: { contains: sp.q, mode: "insensitive" } }, { entityId: { contains: sp.q, mode: "insensitive" } }] } : {}),
     ...(sp.from || sp.to ? { createdAt: { ...(sp.from ? { gte: new Date(`${sp.from}T00:00:00`) } : {}), ...(sp.to ? { lte: new Date(`${sp.to}T23:59:59`) } : {}) } } : {}),
   };
   const [rows, total, entities, users] = await Promise.all([

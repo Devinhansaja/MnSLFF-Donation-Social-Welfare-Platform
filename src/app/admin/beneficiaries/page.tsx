@@ -12,9 +12,9 @@ export default async function Beneficiaries({ searchParams }: { searchParams: SP
   await requireStaff("view");
   const sp = await searchParams;
   const where: Prisma.ProjectWhereInput =
-    sp.type === "family" ? { OR: [{ beneficiaryType: { contains: "amil" } }, { category: { slug: { in: ["family-support", "housing-development", "food-distribution"] } } }] }
-      : sp.type === "school" ? { OR: [{ beneficiaryType: { contains: "chool" } }, { category: { slug: { in: ["school-development", "childrens-education"] } } }] }
-        : sp.type === "individual" ? { OR: [{ beneficiaryType: { contains: "atient" } }, { beneficiaryType: { contains: "tudent" } }, { category: { slug: { in: ["medical-assistance", "disability-support", "elderly-care"] } } }] }
+    sp.type === "family" ? { OR: [{ beneficiaryType: { contains: "amil", mode: "insensitive" } }, { category: { slug: { in: ["family-support", "housing-development", "food-distribution"] } } }] }
+      : sp.type === "school" ? { OR: [{ beneficiaryType: { contains: "chool", mode: "insensitive" } }, { category: { slug: { in: ["school-development", "childrens-education"] } } }] }
+        : sp.type === "individual" ? { OR: [{ beneficiaryType: { contains: "atient", mode: "insensitive" } }, { beneficiaryType: { contains: "tudent", mode: "insensitive" } }, { category: { slug: { in: ["medical-assistance", "disability-support", "elderly-care"] } } }] }
           : {};
   const projects = await getProjects(where, [{ code: "asc" }]);
   const sum = (k: "families" | "children" | "students" | "elderly" | "directBeneficiaries" | "indirectBeneficiaries") => projects.reduce((s, p) => s + p[k], 0);

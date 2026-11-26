@@ -56,6 +56,7 @@ async function main() {
   await db.paymentGateway.deleteMany();
   await db.exchangeRate.deleteMany();
   await db.setting.deleteMany();
+  await db.storedFile.deleteMany();
 
   // ---------- Settings ----------
   const settings: Record<string, string> = {

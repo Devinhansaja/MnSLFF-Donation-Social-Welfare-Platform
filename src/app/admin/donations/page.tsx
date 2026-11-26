@@ -24,7 +24,7 @@ export default async function DonationsAdmin({ searchParams }: { searchParams: S
     ...(sp.kind ? { kind: sp.kind } : {}),
     ...(sp.anonymous ? { anonymous: true } : {}),
     ...(sp.from || sp.to ? { createdAt: { ...(sp.from ? { gte: new Date(`${sp.from}T00:00:00`) } : {}), ...(sp.to ? { lte: new Date(`${sp.to}T23:59:59`) } : {}) } } : {}),
-    ...(sp.q ? { OR: [{ reference: { contains: sp.q } }, { donor: { fullName: { contains: sp.q } } }, { donor: { email: { contains: sp.q } } }] } : {}),
+    ...(sp.q ? { OR: [{ reference: { contains: sp.q, mode: "insensitive" } }, { donor: { fullName: { contains: sp.q, mode: "insensitive" } } }, { donor: { email: { contains: sp.q, mode: "insensitive" } } }] } : {}),
   };
   const [rows, total, agg, projects, methods] = await Promise.all([
     db.donation.findMany({ where, orderBy: { createdAt: "desc" }, skip, take, include: { donor: true, project: { select: { code: true, title: true } }, budgetItem: { select: { name: true } } } }),

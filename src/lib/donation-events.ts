@@ -1,5 +1,6 @@
 import "server-only";
 import { db } from "./db";
+import { siteUrl } from "./site-url";
 import { notifyAdmins, sendEmail } from "./audit";
 import { receiptToken } from "./receipt-token";
 import { usd } from "./format";
@@ -8,7 +9,7 @@ import { usd } from "./format";
 export async function onDonationConfirmed(donationId: string) {
   const d = await db.donation.findUnique({ where: { id: donationId }, include: { donor: true, project: true, budgetItem: true } });
   if (!d) return;
-  const site = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const site = await siteUrl();
   const receiptUrl = `${site}/api/receipts/${d.reference}?t=${receiptToken(d.reference)}`;
   await sendEmail(
     d.donor.email,

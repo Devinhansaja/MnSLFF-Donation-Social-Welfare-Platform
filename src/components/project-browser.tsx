@@ -38,7 +38,7 @@ export async function ProjectBrowser({ params, preset, basePath }: { params: Bro
   if (params.category) where.category = { slug: params.category };
   if (params.district) where.district = params.district;
   if (params.priority) where.priority = params.priority;
-  if (q) where.OR = [{ title: { contains: q } }, { location: { contains: q } }, { shortDescription: { contains: q } }, { code: { contains: q } }];
+  if (q) where.OR = [{ title: { contains: q, mode: "insensitive" } }, { location: { contains: q, mode: "insensitive" } }, { shortDescription: { contains: q, mode: "insensitive" } }, { code: { contains: q, mode: "insensitive" } }];
   if (preset === "urgent") {
     where.status = "FUNDRAISING";
     where.priority = { in: ["URGENT", "HIGH"] };

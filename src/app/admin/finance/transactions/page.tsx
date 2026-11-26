@@ -15,7 +15,7 @@ export default async function Transactions({ searchParams }: { searchParams: SP 
   const where: Prisma.TransactionWhereInput = {
     ...(sp.gateway ? { gateway: sp.gateway } : {}),
     ...(sp.status ? { status: sp.status } : {}),
-    ...(sp.q ? { OR: [{ providerRef: { contains: sp.q } }, { donation: { reference: { contains: sp.q } } }] } : {}),
+    ...(sp.q ? { OR: [{ providerRef: { contains: sp.q, mode: "insensitive" } }, { donation: { reference: { contains: sp.q, mode: "insensitive" } } }] } : {}),
   };
   const [rows, total, gateways] = await Promise.all([
     db.transaction.findMany({ where, orderBy: { createdAt: "desc" }, skip, take, include: { donation: { select: { id: true, reference: true } } } }),

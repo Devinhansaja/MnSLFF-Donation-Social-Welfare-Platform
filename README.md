@@ -9,14 +9,33 @@ with dual-approval finance controls. All amounts are in **USD**, stored as integ
 
 ## Quick start (Windows / macOS / Linux)
 
-Requires Node.js 20.9+ (tested on Node 24).
+Requires Node.js 20.9+ (tested on Node 24) and a PostgreSQL database
+(a free [Neon](https://neon.tech) or Supabase database works).
 
 ```bash
 npm install
-cp .env.example .env        # then set AUTH_SECRET and SANDBOX_WEBHOOK_SECRET to long random strings
-npm run setup               # creates prisma/dev.db and loads demo data
+cp .env.example .env        # fill in DATABASE_URL, DIRECT_URL, AUTH_SECRET, SANDBOX_WEBHOOK_SECRET
+npm run setup               # creates the tables and loads demo data
 npm run dev                 # http://localhost:3000
 ```
+
+## Deploy to Vercel
+
+1. **Create a database.** In Vercel: Project → Storage → Create → Neon (Postgres), and connect it to the project.
+   This adds `DATABASE_URL` automatically. Or create one at neon.tech / supabase.com and copy the connection strings.
+2. **Environment variables** (Project → Settings → Environment Variables), for Production *and* Preview:
+   | Name | Value |
+   |---|---|
+   | `DATABASE_URL` | pooled Postgres connection string |
+   | `DIRECT_URL` | optional — direct (non-pooled) string; `DATABASE_URL_UNPOOLED` / `POSTGRES_URL_NON_POOLING` are detected automatically |
+   | `AUTH_SECRET` | 32+ random characters |
+   | `SANDBOX_WEBHOOK_SECRET` | 32+ random characters |
+   | `NEXT_PUBLIC_SITE_URL` | optional, e.g. `https://your-site.vercel.app` |
+   Generate secrets with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`.
+3. **Redeploy.** The build runs `prisma migrate deploy`, which creates the tables.
+4. **Load demo data once** from your computer, with `.env` pointing at the same database: `npm run db:seed`.
+5. If the sandbox payment page never confirms on a *preview* URL, turn off Vercel Authentication
+   (Settings → Deployment Protection) or test on the production domain: the payment webhook is a server-to-server call to the site itself.
 
 npm may ask you to approve install scripts for `prisma`, `@prisma/client`, `@prisma/engines` and `esbuild`
 (`npm install-scripts approve <name>`). They are required.
@@ -25,9 +44,9 @@ npm may ask you to approve install scripts for `prisma`, `@prisma/client`, `@pri
 |---|---|
 | `npm run dev` | Development server |
 | `npm run build` / `npm start` | Production build / server |
-| `npm test` | Unit + database tests (uses a throwaway temp DB, never `dev.db`) |
+| `npm test` | Unit tests; database tests also run if `TEST_DATABASE_URL` points at an empty throwaway Postgres DB |
 | `npm run db:seed` | Wipes and reloads demo data |
-| `npm run db:reset` | Drops the dev database and reseeds — **destroys all data** |
+| `npm run db:reset` | Drops all tables and reapplies migrations — **destroys all data** |
 
 ## Demo accounts (development only)
 
@@ -48,7 +67,8 @@ Staff sign in at `/login` and land on `/admin`; donors land on `/account`.
 ## What's where
 
 ```
-prisma/schema.prisma     Database schema (34 tables)
+prisma/schema.prisma     Database schema (27 tables, PostgreSQL)
+prisma/migrations/       SQL migrations applied on every deploy
 prisma/seed.ts           Demonstration data
 src/lib/finance.ts       Pure money maths — single source of truth for every total
 src/lib/donations.ts     confirmDonation / failDonation / applyRefund (transactional, idempotent)
@@ -58,7 +78,7 @@ src/lib/reports.ts       Admin report generation (CSV / XLSX / PDF)
 src/app/(site)/          Public website, checkout, donor portal
 src/app/admin/           Admin panel
 src/app/api/             Webhooks, receipts, reports, statements
-storage/private/         Uploaded bank slips & application documents (never public)
+StoredFile table         Uploaded bank slips & application documents (private, served only to staff)
 ```
 
 ## How money flows
@@ -81,14 +101,13 @@ remaining = max(0, goal − gross); available = net − paid expenses; commitmen
 - [ ] **Photos:** `public/images/photos/*` were downloaded from atelierrk.com (MnSLFF's tsunami rebuilding gallery).
       Confirm you have the photographer's permission, or replace them, before the site is public.
 - [ ] Replace demo data: `npm run db:reset` loads demo data — for production, create real staff accounts and remove the demo users.
-- [ ] Move to PostgreSQL (e.g. Supabase): set `provider = "postgresql"` in `prisma/schema.prisma`, set `DATABASE_URL`, run `npx prisma migrate dev --name init`.
 - [ ] Payment gateways: obtain merchant approval for charitable fundraising, implement the provider's webhook signature check in
       `src/lib/payments.ts`, add credentials to `.env`, then enable in Admin › Payment Gateway Settings.
 - [ ] Real bank details in Admin › Website Settings (currently placeholder "DEMO BANK").
 - [ ] Email: set `RESEND_API_KEY` (without it, emails are printed to the server log).
 - [ ] Legal pages: have the template privacy / terms / donation / refund policies reviewed.
 - [ ] Registration number and address in Website Settings.
-- [ ] Set `NEXT_PUBLIC_SITE_URL` to the real domain (used in receipts, sitemap, share links).
+- [ ] Set `NEXT_PUBLIC_SITE_URL` to the real domain (otherwise the request domain is used).
 
 ## Not yet implemented (honest list)
 

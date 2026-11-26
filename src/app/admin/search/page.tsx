@@ -11,10 +11,10 @@ export default async function AdminSearch({ searchParams }: { searchParams: SP }
   const q = ((await searchParams).q ?? "").trim();
   if (!q) return <div><PageHeader title="Search" /><Empty>Type something in the search box above.</Empty></div>;
   const [projects, donations, donors, apps] = await Promise.all([
-    db.project.findMany({ where: { OR: [{ title: { contains: q } }, { code: { contains: q } }, { location: { contains: q } }] }, take: 10 }),
-    db.donation.findMany({ where: { reference: { contains: q } }, take: 10, include: { donor: true } }),
-    db.donor.findMany({ where: { OR: [{ fullName: { contains: q } }, { email: { contains: q } }, { companyName: { contains: q } }] }, take: 10 }),
-    db.application.findMany({ where: { OR: [{ reference: { contains: q } }, { applicantName: { contains: q } }] }, take: 10 }),
+    db.project.findMany({ where: { OR: [{ title: { contains: q, mode: "insensitive" } }, { code: { contains: q, mode: "insensitive" } }, { location: { contains: q, mode: "insensitive" } }] }, take: 10 }),
+    db.donation.findMany({ where: { reference: { contains: q, mode: "insensitive" } }, take: 10, include: { donor: true } }),
+    db.donor.findMany({ where: { OR: [{ fullName: { contains: q, mode: "insensitive" } }, { email: { contains: q, mode: "insensitive" } }, { companyName: { contains: q, mode: "insensitive" } }] }, take: 10 }),
+    db.application.findMany({ where: { OR: [{ reference: { contains: q, mode: "insensitive" } }, { applicantName: { contains: q, mode: "insensitive" } }] }, take: 10 }),
   ]);
   const none = !projects.length && !donations.length && !donors.length && !apps.length;
   return (

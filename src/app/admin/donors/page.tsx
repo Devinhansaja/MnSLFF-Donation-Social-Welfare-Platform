@@ -18,7 +18,7 @@ export default async function DonorsAdmin({ searchParams }: { searchParams: SP }
     ...(sp.intl ? { country: { not: "LK" } } : {}),
     ...(sp.country ? { country: sp.country } : {}),
     ...(sp.public ? { publicProfile: true } : {}),
-    ...(sp.q ? { OR: [{ fullName: { contains: sp.q } }, { email: { contains: sp.q } }, { companyName: { contains: sp.q } }] } : {}),
+    ...(sp.q ? { OR: [{ fullName: { contains: sp.q, mode: "insensitive" } }, { email: { contains: sp.q, mode: "insensitive" } }, { companyName: { contains: sp.q, mode: "insensitive" } }] } : {}),
   };
   const [rows, total] = await Promise.all([
     db.donor.findMany({ where, orderBy: { createdAt: "desc" }, skip, take, include: { donations: { select: { amountCents: true, feeCents: true, refundedCents: true, status: true, projectId: true, confirmedAt: true } } } }),

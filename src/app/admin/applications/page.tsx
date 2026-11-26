@@ -16,7 +16,7 @@ export default async function Applications({ searchParams }: { searchParams: SP 
   const where: Prisma.ApplicationWhereInput = {
     ...(sp.status ? { status: sp.status } : {}),
     ...(sp.category ? { category: sp.category } : {}),
-    ...(sp.q ? { OR: [{ reference: { contains: sp.q } }, { applicantName: { contains: sp.q } }, { location: { contains: sp.q } }] } : {}),
+    ...(sp.q ? { OR: [{ reference: { contains: sp.q, mode: "insensitive" } }, { applicantName: { contains: sp.q, mode: "insensitive" } }, { location: { contains: sp.q, mode: "insensitive" } }] } : {}),
   };
   const [rows, counts] = await Promise.all([
     db.application.findMany({ where, orderBy: { createdAt: "desc" } }),

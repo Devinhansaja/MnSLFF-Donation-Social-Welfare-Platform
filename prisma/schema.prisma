@@ -1,15 +1,27 @@
 // MnSLFF Donation & Social Welfare Platform
 // All money is stored as integer US cents (USD minor units) unless a field says otherwise.
-// SQLite is used for local development. To move to PostgreSQL, change `provider`
-// to "postgresql" and DATABASE_URL, then run `npx prisma migrate dev`.
+// PostgreSQL (e.g. Neon, Supabase, Vercel Postgres). DATABASE_URL may be a pooled
+// connection; DIRECT_URL must be a direct (non-pooled) one used for migrations.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// Private uploads (bank slips, application documents). Kept in the database
+// because serverless hosts such as Vercel have no persistent disk.
+model StoredFile {
+  id        String   @id @default(cuid())
+  folder    String
+  mime      String
+  size      Int
+  data      Bytes
+  createdAt DateTime @default(now())
 }
 
 model User {

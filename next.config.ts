@@ -7,6 +7,8 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["@prisma/client", "exceljs", "pdf-lib"],
   // Uploaded bank slips and application documents are capped at 5 MB each in code.
   experimental: { serverActions: { bodySizeLimit: "12mb" } },
+  // PDF receipts/reports read the logo from disk; make sure it ships with the serverless functions.
+  outputFileTracingIncludes: { "/**": ["./public/brand/mark-white.png"] },
   turbopack: {
     rules: {
       "*.css": {

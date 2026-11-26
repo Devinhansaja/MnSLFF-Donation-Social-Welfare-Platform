@@ -81,7 +81,7 @@ export async function getPublicDonations(opts: { projectId?: string; take?: numb
   const where: Prisma.DonationWhereInput = {
     status: { in: ["PAID", "PARTIALLY_REFUNDED"] },
     ...(opts.projectId ? { projectId: opts.projectId } : {}),
-    ...(opts.q ? { donor: { fullName: { contains: opts.q } }, anonymous: false, showName: true } : {}),
+    ...(opts.q ? { donor: { fullName: { contains: opts.q, mode: "insensitive" } }, anonymous: false, showName: true } : {}),
   };
   const [rows, count, agg] = await Promise.all([
     db.donation.findMany({
