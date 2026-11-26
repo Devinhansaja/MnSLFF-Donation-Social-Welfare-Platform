@@ -5,12 +5,13 @@ import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
 import { can, isStaff, type Permission } from "./rbac";
+import { appSecret } from "./secrets";
 
 const COOKIE = "mnslff_session";
 const MAX_AGE = 60 * 60 * 8; // 8 hours
 
 function secret() {
-  const s = process.env.AUTH_SECRET;
+  const s = appSecret("AUTH_SECRET");
   if (!s || s.length < 32) throw new Error("AUTH_SECRET must be set to at least 32 characters");
   return new TextEncoder().encode(s);
 }

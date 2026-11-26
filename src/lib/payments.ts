@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { appSecret } from "./secrets";
 
 /**
  * Modular payment gateway layer. Each adapter knows how to start a hosted
@@ -41,12 +42,12 @@ export function sandboxFee(totalCents: number) {
 
 const sandbox: GatewayAdapter = {
   code: "SANDBOX",
-  isConfigured: () => !!process.env.SANDBOX_WEBHOOK_SECRET,
+  isConfigured: () => !!appSecret("SANDBOX_WEBHOOK_SECRET"),
   async startCheckout({ reference, siteUrl }) {
     return { redirectUrl: `${siteUrl}/checkout/sandbox/${reference}` };
   },
   verifyWebhook(body, headers) {
-    const secret = process.env.SANDBOX_WEBHOOK_SECRET;
+    const secret = appSecret("SANDBOX_WEBHOOK_SECRET");
     const sig = headers.get("x-sandbox-signature") ?? "";
     const ts = Number(headers.get("x-sandbox-timestamp") ?? 0);
     if (!secret || !sig) return null;

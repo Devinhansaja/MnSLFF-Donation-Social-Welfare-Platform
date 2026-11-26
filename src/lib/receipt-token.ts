@@ -1,8 +1,9 @@
 import crypto from "node:crypto";
+import { appSecret } from "./secrets";
 
 /** Unguessable token that lets a donor open their receipt link without logging in. */
 export function receiptToken(reference: string) {
-  return crypto.createHmac("sha256", process.env.AUTH_SECRET ?? "").update(`receipt:${reference}`).digest("hex").slice(0, 32);
+  return crypto.createHmac("sha256", appSecret("AUTH_SECRET") ?? "").update(`receipt:${reference}`).digest("hex").slice(0, 32);
 }
 
 export function verifyReceiptToken(reference: string, token: string | null) {

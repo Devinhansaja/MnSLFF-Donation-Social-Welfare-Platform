@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { siteUrl } from "@/lib/site-url";
 import { hmac } from "@/lib/payments";
+import { appSecret } from "@/lib/secrets";
 
 /**
  * Plays the role of the payment provider's servers: it sends an HMAC-signed
@@ -17,7 +18,7 @@ export async function sandboxPay(formData: FormData) {
   const donation = await db.donation.findUnique({ where: { reference } });
   if (!donation || donation.method !== "SANDBOX") redirect("/donate");
 
-  const secret = process.env.SANDBOX_WEBHOOK_SECRET!;
+  const secret = appSecret("SANDBOX_WEBHOOK_SECRET")!;
   const body = JSON.stringify({
     eventId: crypto.randomUUID(),
     reference,
