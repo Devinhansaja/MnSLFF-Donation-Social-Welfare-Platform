@@ -1,0 +1,454 @@
+// MnSLFF Donation & Social Welfare Platform
+// All money is stored as integer US cents (USD minor units) unless a field says otherwise.
+// SQLite is used for local development. To move to PostgreSQL, change `provider`
+// to "postgresql" and DATABASE_URL, then run `npx prisma migrate dev`.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  // SUPER_ADMIN | ADMIN | FINANCE_MANAGER | FINANCE_OFFICER | PROJECT_MANAGER |
+  // VERIFICATION_OFFICER | CONTENT_MANAGER | VOLUNTEER | AUDITOR | DONOR | BENEFICIARY
+  role         String   @default("DONOR")
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  donor          Donor?
+  auditLogs      AuditLog[]
+  notifications  Notification[]
+  savedProjects  SavedProject[]
+  createdExpenses  Expense[] @relation("ExpenseCreatedBy")
+  approvedExpenses Expense[] @relation("ExpenseApprovedBy")
+  approvalRequests ApprovalRequest[] @relation("ApprovalRequestedBy")
+  approvalsGiven   ApprovalRequest[] @relation("ApprovalApprovedBy")
+}
+
+model Donor {
+  id            String   @id @default(cuid())
+  userId        String?  @unique
+  user          User?    @relation(fields: [userId], references: [id])
+  fullName      String
+  companyName   String?
+  email         String
+  phone         String?
+  country       String   // ISO 3166-1 alpha-2
+  donorType     String   @default("INDIVIDUAL") // INDIVIDUAL | CORPORATE | ORGANIZATION
+  logoUrl       String?
+  publicProfile Boolean  @default(false) // listed in public donor directory
+  showTotals    Boolean  @default(false) // consent to show donation totals publicly
+  notifyUpdates Boolean  @default(true)
+  isDemo        Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  donations Donation[]
+
+  @@index([email])
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  name        String
+  description String
+  image       String
+  icon        String
+  sortOrder   Int       @default(0)
+  projects    Project[]
+}
+
+model Project {
+  id               String    @id @default(cuid())
+  code             String    @unique // public Project ID, e.g. MNS-2026-001
+  slug             String    @unique
+  title            String
+  categoryId       String
+  category         Category  @relation(fields: [categoryId], references: [id])
+  shortDescription String
+  // DRAFT | PENDING_VERIFICATION | APPROVED | FUNDRAISING | FULLY_FUNDED |
+  // IN_PROGRESS | COMPLETED | ON_HOLD | CANCELLED | CLOSED
+  status           String    @default("DRAFT")
+  priority         String    @default("NORMAL") // NORMAL | HIGH | URGENT
+  featured         Boolean   @default(false)
+  isPublic         Boolean   @default(false)
+  isDemo           Boolean   @default(false)
+
+  location         String
+  district         String
+
+  // Story
+  background       String    @default("")
+  situation        String    @default("")
+  problems         String    @default("")
+  whyNeeded        String    @default("")
+  objectives       String    @default("")
+  solution         String    @default("")
+  implementation   String    @default("")
+  outcomes         String    @default("")
+  longTermImpact   String    @default("")
+  sustainability   String    @default("")
+
+  // Beneficiaries (public, aggregated only)
+  beneficiaryType  String    @default("")
+  families         Int       @default(0)
+  children         Int       @default(0)
+  students         Int       @default(0)
+  elderly          Int       @default(0)
+  directBeneficiaries   Int  @default(0)
+  indirectBeneficiaries Int  @default(0)
+  privateNotes     String    @default("") // admin only
+
+  // Finance (cents)
+  goalCents        Int       // gross fundraising target
+  costCents        Int       // net project cost requirement
+
+  coverImage       String
+  startDate        DateTime?
+  deadline         DateTime?
+  expectedCompletion DateTime?
+  publishedAt      DateTime?
+  completedAt      DateTime?
+
+  // Verification
+  verificationStatus  String  @default("PENDING") // PENDING | VERIFIED | REJECTED
+  verificationDate    DateTime?
+  verificationTeam    String  @default("")
+  verificationSummary String  @default("")
+  siteVisit           String  @default("")
+
+  // Completion
+  outcome          String    @default("")
+  impactStatement  String    @default("")
+  finalBeneficiaries Int     @default(0)
+
+  seoTitle         String    @default("")
+  metaDescription  String    @default("")
+
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  budgetItems BudgetItem[]
+  media       Media[]
+  milestones  Milestone[]
+  updates     ProjectUpdate[]
+  documents   ProjectDocument[]
+  donations   Donation[]
+  expenses    Expense[]
+  ledger      LedgerEntry[]
+  savedBy     SavedProject[]
+
+  @@index([status])
+  @@index([categoryId])
+}
+
+model BudgetItem {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name        String
+  description String   @default("")
+  image       String?
+  quantity    Int
+  unitCents   Int
+  fundedQty   Int      @default(0) // only increased by confirmed item sponsorships
+  sponsorable Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  donations   Donation[]
+}
+
+model Media {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  url       String
+  kind      String  @default("IMAGE") // IMAGE | VIDEO
+  stage     String  @default("BEFORE") // BEFORE | VERIFICATION | DURING | DISTRIBUTION | AFTER
+  caption   String  @default("")
+  sortOrder Int     @default(0)
+}
+
+model Milestone {
+  id          String    @id @default(cuid())
+  projectId   String
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title       String
+  description String    @default("")
+  date        DateTime?
+  done        Boolean   @default(false)
+  sortOrder   Int       @default(0)
+  expenses    Expense[]
+}
+
+model ProjectUpdate {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title     String
+  body      String
+  image     String?
+  milestone String   @default("")
+  createdAt DateTime @default(now())
+}
+
+model ProjectDocument {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title     String
+  url       String
+  isPublic  Boolean @default(false)
+  kind      String  @default("SUPPORTING") // SUPPORTING | VERIFICATION | REPORT
+}
+
+model Donation {
+  id              String    @id @default(cuid())
+  reference       String    @unique // e.g. DN-8F3K2A
+  idempotencyKey  String    @unique
+  donorId         String
+  donor           Donor     @relation(fields: [donorId], references: [id])
+  projectId       String?   // null = general foundation fund
+  project         Project?  @relation(fields: [projectId], references: [id])
+  budgetItemId    String?
+  budgetItem      BudgetItem? @relation(fields: [budgetItemId], references: [id])
+  itemQuantity    Int?
+
+  // USD gross amount the donor gives to the cause (cents)
+  amountCents     Int
+  // Fee the donor voluntarily added to cover processing (cents)
+  coveredFeeCents Int       @default(0)
+  // Actual gateway fee reported at settlement (cents)
+  feeCents        Int       @default(0)
+  refundedCents   Int       @default(0)
+
+  originalCurrency String   @default("USD")
+  originalAmount   Int      // minor units of original currency
+  exchangeRate     Float    @default(1) // original -> USD
+
+  method          String    // gateway code: SANDBOX | BANK_TRANSFER | MANUAL | STRIPE | PAYPAL | ...
+  // INITIATED | PENDING | PROCESSING | PAID | FAILED | CANCELLED | REFUNDED | PARTIALLY_REFUNDED | CHARGEBACK
+  status          String    @default("INITIATED")
+  frequency       String    @default("ONE_TIME") // ONE_TIME | MONTHLY
+  kind            String    @default("PROJECT") // GENERAL | PROJECT | ITEM | FAMILY | STUDENT | CORPORATE
+
+  anonymous       Boolean   @default(false)
+  showName        Boolean   @default(true)
+  message         String    @default("")
+  messageApproved Boolean   @default(false)
+  isDemo          Boolean   @default(false)
+
+  createdAt       DateTime  @default(now())
+  confirmedAt     DateTime?
+
+  transactions  Transaction[]
+  bankTransfer  BankTransfer?
+  refunds       Refund[]
+  ledger        LedgerEntry[]
+
+  @@index([projectId, status])
+  @@index([status])
+}
+
+model Transaction {
+  id          String   @id @default(cuid())
+  donationId  String
+  donation    Donation @relation(fields: [donationId], references: [id])
+  gateway     String
+  providerRef String   @unique // provider's transaction id; unique prevents duplicate processing
+  eventType   String
+  status      String
+  amountCents Int
+  feeCents    Int      @default(0)
+  netCents    Int      @default(0)
+  settlement  String   @default("UNSETTLED") // UNSETTLED | SETTLED | RECONCILED
+  rawPayload  String   @default("")
+  createdAt   DateTime @default(now())
+}
+
+model BankTransfer {
+  id          String    @id @default(cuid())
+  donationId  String    @unique
+  donation    Donation  @relation(fields: [donationId], references: [id])
+  bankRef     String
+  slipPath    String?
+  status      String    @default("PENDING") // PENDING | VERIFIED | REJECTED
+  verifiedBy  String?
+  verifiedAt  DateTime?
+  createdAt   DateTime  @default(now())
+}
+
+model Refund {
+  id          String    @id @default(cuid())
+  donationId  String
+  donation    Donation  @relation(fields: [donationId], references: [id])
+  amountCents Int
+  reason      String
+  status      String    @default("REQUESTED") // REQUESTED | APPROVED | REJECTED
+  createdAt   DateTime  @default(now())
+}
+
+model Expense {
+  id             String    @id @default(cuid())
+  projectId      String?   // null = administrative / general
+  project        Project?  @relation(fields: [projectId], references: [id])
+  milestoneId    String?
+  milestone      Milestone? @relation(fields: [milestoneId], references: [id])
+  title          String
+  category       String
+  description    String    @default("")
+  amountCents    Int
+  date           DateTime
+  administrative Boolean   @default(false)
+  // PENDING | APPROVED (commitment) | PAID | REJECTED
+  status         String    @default("PENDING")
+  isPublic       Boolean   @default(true)
+  invoiceUrl     String?
+  createdById    String?
+  createdBy      User?     @relation("ExpenseCreatedBy", fields: [createdById], references: [id])
+  approvedById   String?
+  approvedBy     User?     @relation("ExpenseApprovedBy", fields: [approvedById], references: [id])
+  isDemo         Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  ledger         LedgerEntry[]
+}
+
+// Append-only financial ledger. Never updated or deleted by application code.
+model LedgerEntry {
+  id          String    @id @default(cuid())
+  createdAt   DateTime  @default(now())
+  // DONATION | FEE | REFUND | EXPENSE | ADJUSTMENT | TRANSFER
+  type        String
+  amountCents Int       // positive = funds in, negative = funds out
+  projectId   String?
+  project     Project?  @relation(fields: [projectId], references: [id])
+  donationId  String?
+  donation    Donation? @relation(fields: [donationId], references: [id])
+  expenseId   String?
+  expense     Expense?  @relation(fields: [expenseId], references: [id])
+  memo        String
+  actorId     String?
+
+  @@index([projectId])
+}
+
+model ApprovalRequest {
+  id            String    @id @default(cuid())
+  type          String    // REFUND | EXPENSE_PAYMENT | ADJUSTMENT
+  entityId      String
+  summary       String
+  amountCents   Int
+  status        String    @default("PENDING") // PENDING | APPROVED | REJECTED
+  requestedById String
+  requestedBy   User      @relation("ApprovalRequestedBy", fields: [requestedById], references: [id])
+  approvedById  String?
+  approvedBy    User?     @relation("ApprovalApprovedBy", fields: [approvedById], references: [id])
+  createdAt     DateTime  @default(now())
+  decidedAt     DateTime?
+}
+
+model Application {
+  id             String   @id @default(cuid())
+  reference      String   @unique
+  applicantName  String
+  email          String
+  phone          String   @default("")
+  location       String
+  category       String
+  description    String
+  estimatedCents Int
+  beneficiaries  Int
+  recommendation String   @default("")
+  documents      String   @default("") // JSON list of private file paths
+  consent        Boolean
+  // SUBMITTED | UNDER_REVIEW | VERIFICATION_ASSIGNED | FIELD_VERIFICATION |
+  // APPROVED | REJECTED | PROJECT_CREATED | FUNDRAISING_STARTED
+  status         String   @default("SUBMITTED")
+  officer        String   @default("")
+  notes          String   @default("")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Testimonial {
+  id       String  @id @default(cuid())
+  name     String
+  role     String  // BENEFICIARY | DONOR | COORDINATOR | VOLUNTEER
+  quote    String
+  image    String?
+  consent  Boolean @default(false)
+  approved Boolean @default(false)
+  isDemo   Boolean @default(false)
+}
+
+model SavedProject {
+  userId    String
+  projectId String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@id([userId, projectId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String?  // null = admin broadcast
+  user      User?    @relation(fields: [userId], references: [id])
+  title     String
+  body      String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  entity    String
+  entityId  String   @default("")
+  detail    String   @default("")
+  createdAt DateTime @default(now())
+}
+
+model PaymentGateway {
+  code        String  @id
+  name        String
+  description String
+  enabled     Boolean @default(false)
+  sandbox     Boolean @default(true)
+  sortOrder   Int     @default(0)
+}
+
+model ExchangeRate {
+  id        String   @id @default(cuid())
+  currency  String
+  usdPerUnit Float
+  date      DateTime @default(now())
+}
+
+model Setting {
+  key   String @id
+  value String
+}
+
+model Subscriber {
+  email     String   @id
+  createdAt DateTime @default(now())
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  subject   String
+  message   String
+  createdAt DateTime @default(now())
+}

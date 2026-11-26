@@ -1,26 +1,92 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@theme {
+  --color-forest: #185c44;
+  --color-forest-deep: #103d30;
+  --color-forest-50: #eef5f1;
+  --color-forest-100: #d6e8de;
+  --color-gold: #e8b65a;
+  --color-gold-soft: #f6e6c4;
+  --color-ivory: #f7f5ef;
+  --color-navy: #172c3b;
+  --color-muted: #64748b;
+  --color-success: #22a06b;
+  --color-urgent: #dc3545;
+  --color-line: #e6e2d6;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --font-serif: var(--font-playfair), Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-inter), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sinhala: "Noto Sans Sinhala", var(--font-inter), sans-serif;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  --radius-card: 1.25rem;
+  --shadow-soft: 0 1px 2px rgb(23 44 59 / 0.04), 0 8px 24px -12px rgb(23 44 59 / 0.12);
+  --shadow-lift: 0 2px 4px rgb(23 44 59 / 0.05), 0 18px 40px -18px rgb(23 44 59 / 0.25);
+
+  --animate-fade-up: fade-up 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: none; }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@custom-variant dark (&:where(.dark, .dark *));
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
 }
+
+body {
+  background: var(--color-ivory);
+  color: var(--color-navy);
+  font-family: var(--font-sans);
+  font-feature-settings: "cv11", "ss01";
+  text-rendering: optimizeLegibility;
+}
+
+.font-num {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Long-form project story text */
+.prose-story p { margin: 0 0 1rem; line-height: 1.75; color: #334155; }
+.prose-story h3 { font-family: var(--font-serif); font-size: 1.35rem; color: var(--color-navy); margin: 2rem 0 0.6rem; }
+
+/* Forms */
+.field {
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-line);
+  background: white;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.95rem;
+  color: var(--color-navy);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.field:focus { outline: none; border-color: var(--color-forest); box-shadow: 0 0 0 3px rgb(24 92 68 / 0.15); }
+.label { display: block; font-size: 0.82rem; font-weight: 600; color: var(--color-navy); margin-bottom: 0.35rem; }
+
+.dark .field { background: #0f1d27; border-color: #2a3b48; color: #e2e8f0; }
+.dark .label { color: #cbd5e1; }
+
+/* Make scroll containers the containing block, so absolutely positioned
+   children (e.g. sr-only labels in table headers) can't widen the page on mobile. */
+.overflow-x-auto { position: relative; }
+
+.scrollbar-none::-webkit-scrollbar { display: none; }
+.scrollbar-none { scrollbar-width: none; }

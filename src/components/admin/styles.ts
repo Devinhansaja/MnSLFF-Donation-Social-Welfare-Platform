@@ -1,0 +1,11 @@
+export const card = "rounded-2xl border border-line bg-white shadow-[var(--shadow-soft)] dark:border-[#24384a] dark:bg-[#132430]";
+export const cardPad = `${card} p-5`;
+export const th = "px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted whitespace-nowrap";
+export const td = "px-4 py-3 align-top text-sm text-navy dark:text-slate-200";
+export const tableWrap = `${card} overflow-x-auto`;
+export const table = "min-w-full divide-y divide-line dark:divide-[#24384a]";
+export const tbody = "divide-y divide-line/70 dark:divide-[#24384a]";
+export const h1 = "font-serif text-2xl text-navy dark:text-white sm:text-3xl";
+export const muted = "text-sm text-muted dark:text-slate-400";
+export const input = "field h-10 !py-2 text-sm";
+export const link = "font-medium text-forest hover:underline dark:text-emerald-300";
