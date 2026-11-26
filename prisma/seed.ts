@@ -14,6 +14,7 @@
  */
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import crypto from "node:crypto";
 
 const db = new PrismaClient();
 const P = "/images/photos/";
@@ -30,18 +31,26 @@ let refCounter = 1000;
 const nextRef = () => `DN-DEMO${++refCounter}`;
 
 async function main() {
-  // `--if-empty` is used by the deploy build: load demo data only into a brand-new
-  // database, and only when SEED_ADMIN_PASSWORD is set (never with public passwords).
+  // `--if-empty` is used by the deploy build. It never uses the public README
+  // passwords: demo accounts get SEED_ADMIN_PASSWORD, or — if that isn't set — a
+  // random password nobody knows (accounts stay locked until it is set).
   if (process.argv.includes("--if-empty")) {
     const pw = process.env.SEED_ADMIN_PASSWORD ?? "";
-    if (pw.length < 10) {
-      console.log("Demo data not loaded: set SEED_ADMIN_PASSWORD (10+ characters) to load it on first deploy.");
-      return;
-    }
+    if (pw && pw.length < 10) console.log("SEED_ADMIN_PASSWORD ignored: it must be at least 10 characters.");
+    const usable = pw.length >= 10 ? pw : "";
     if ((await db.user.count()) > 0) {
-      console.log("Database already has data; demo seed skipped.");
+      if (usable) {
+        // Lets the password be set or changed later just by updating the variable and redeploying.
+        const hash = await bcrypt.hash(usable, 12);
+        const r = await db.user.updateMany({ where: { email: { endsWith: "@mnslff.demo" } }, data: { passwordHash: hash } });
+        console.log(`Database already has data; set SEED_ADMIN_PASSWORD on ${r.count} demo accounts.`);
+      } else {
+        console.log("Database already has data; demo seed skipped.");
+      }
       return;
     }
+    process.env.SEED_ADMIN_PASSWORD = usable || crypto.randomBytes(24).toString("hex");
+    if (!usable) console.log("Loading demo data. Demo logins are locked until SEED_ADMIN_PASSWORD is set and the site is redeployed.");
   }
   console.log("Resetting database…");
   // order matters for FKs
